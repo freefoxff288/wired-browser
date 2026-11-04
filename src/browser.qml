@@ -92,14 +92,13 @@ Window {
         persistentCookiesPolicy: WebEngineProfile.AllowPersistentCookies
         httpCacheType: WebEngineProfile.DiskHttpCache
     }
-    Connections {
-        target: proto.instance()
-        function onDownloadRequested(d) {
-            d.downloadDirectory = win.dlDir;
-            d.accept();
-            win.dls = win.dls.concat([d]);           // всплывашки
-            win.dlAll = [d].concat(win.dlAll);       // список в панели загрузок (только эта сессия)
-        }
+    // загрузки: подключаемся напрямую — Connections { target: proto.instance() } в Qt 6.12 сигнал не получает,
+    // и непринятая загрузка молча отменяется
+    function onDownload(d) {
+        d.downloadDirectory = win.dlDir;
+        d.accept();
+        win.dls = win.dls.concat([d]);           // всплывашки
+        win.dlAll = [d].concat(win.dlAll);       // список в панели загрузок (только эта сессия)
     }
     property var dls: []
     property var dlAll: []
@@ -185,6 +184,7 @@ Window {
     }
 
     Component.onCompleted: {
+        proto.instance().downloadRequested.connect(onDownload);
         applyScripts();
         for (const u of JSON.parse(cfg.pinned)) { newTab(u, true); tabs.setProperty(tabs.count - 1, "pinned", true); }
         recount();
